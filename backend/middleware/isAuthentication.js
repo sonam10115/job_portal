@@ -26,5 +26,5 @@ const authenticateToken = async (req, res, next) => {
             success: false,
         });
     }
-};
+}; 0
 export default authenticateToken;

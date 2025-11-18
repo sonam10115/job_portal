@@ -48,16 +48,25 @@ const LOCAL_JWT_SECRET = process.env.JWT_SECRET || getOrCreateLocalJwtSecret();
 export const register = async (req, res) => {
     try {
         logger.info(`Request received: ${req.method} ${req.path}`);
+        console.log('Request body:', req.body);
+        console.log('Request file:', req.file);
+
         const { fullname, email, password, role, phoneNumber } = req.body;
+
+        // Log individual fields for debugging
+        console.log(`Extracted fields - fullname: ${fullname}, email: ${email}, password: ${password ? '****' : 'MISSING'}, role: ${role}, phoneNumber: ${phoneNumber}`);
+
         if (!fullname || !email || !password || !role) {
+            console.warn(`Missing required fields - fullname: ${fullname}, email: ${email}, password: ${password ? 'present' : 'MISSING'}, role: ${role}`);
             return res.status(400).json({
-                message: "All fields are required",
+                message: "All fields are required (fullname, email, password, role)",
                 success: false,
             });
         }
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
+            console.warn(`User with email ${email} already exists`);
             return res.status(400).json({
                 message: "Email already exists",
                 success: false,
@@ -75,6 +84,8 @@ export const register = async (req, res) => {
             role,
         });
         await user.save();
+
+        logger.info(`User registered successfully: ${email}`);
 
         const publicUser = {
             _id: user._id,
@@ -102,7 +113,7 @@ export const register = async (req, res) => {
             });
         }
         return res.status(500).json({
-            message: "registration error",
+            message: "Registration error",
             success: false,
         });
     }

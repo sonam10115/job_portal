@@ -12,7 +12,8 @@ const applicationSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["", "accepted", "Rejected"],
+        // include the default value 'Applied' in enum so default doesn't fail validation
+        enum: ["Applied", "", "accepted", "Rejected"],
         default: "Applied",
     },
 }, {

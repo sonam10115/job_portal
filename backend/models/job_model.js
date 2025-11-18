@@ -14,7 +14,7 @@ const jobSchema = new mongoose.Schema({
         required: true,
     },
     location: {
-        type: Number,
+        type: String,
         required: true,
     },
     salary: {
@@ -25,6 +25,12 @@ const jobSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+
+    experience: {
+        type: String,
+        required: true,
+    },
+
     company: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Company",
@@ -39,7 +45,7 @@ const jobSchema = new mongoose.Schema({
         ref: "user",
         required: true,
     },
-    application: {
+    applications: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Application",
         default: null,
