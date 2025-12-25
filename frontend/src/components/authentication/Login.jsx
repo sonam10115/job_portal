@@ -8,6 +8,8 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { USER_API_ENDPOINT } from "@/utils/data";
+import { useDispatch, useSelector } from "react-redux";
+import { setLoading, setUser } from "@/redux/authSlice";
 
 const Login = () => {
   const [input, setInput] = useState({
@@ -23,12 +25,16 @@ const Login = () => {
       [e.target.name]: e.target.value,
     });
   };
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { loading } = useSelector((store) => store.auth);
 
   const submitHandler = async (e) => {
     e.preventDefault();
 
     try {
+      dispatch(setLoading(true));
+
       const res = await axios.post(`${USER_API_ENDPOINT}/login`, input, {
         headers: {
           "Content-Type": "application/json",
@@ -36,7 +42,8 @@ const Login = () => {
         withCredentials: true,
       });
       if (res?.data?.success) {
-        navigate("/");
+        dispatch(setUser(res.data.user));
+        navigate("/Home");
         toast.success(res.data.message || "Login successful");
       }
     } catch (error) {
@@ -44,6 +51,8 @@ const Login = () => {
       const message =
         error?.response?.data?.message || error?.message || "Login failed";
       toast.error(message);
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
@@ -139,9 +148,17 @@ const Login = () => {
                 </RadioGroup>
               </div>
 
-              <button className="mt-2 w-full py-3 rounded-xl text-white font-semibold bg-linear-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600">
-                Login
-              </button>
+              {loading ? (
+                <div className="flex items-center justify-center my-10">
+                  <div className="spinner-border text-blue-600" role="status">
+                    <span className="sr-only">Loading....</span>
+                  </div>
+                </div>
+              ) : (
+                <button className="mt-2 w-full py-3 rounded-xl text-white font-semibold bg-linear-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600">
+                  Login
+                </button>
+              )}
 
               <p className="text-center mt-3 text-sm text-slate-300">
                 No account?{" "}

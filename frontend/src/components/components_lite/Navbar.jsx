@@ -3,10 +3,39 @@ import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { User2, LogOut, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { Button } from "../ui/button";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/redux/authSlice";
+import { USER_API_ENDPOINT } from "@/utils/data";
 
 function Navbar() {
-  const [open, setOpen] = useState(false);
-  const user = false; // Replace with actual authentication logic
+  const [open, setOpen] = useState(true);
+  const { user } = useSelector((store) => store.auth); // Replace with actual authentication logic
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const logouthandler = async () => {
+    try {
+      const response = await fetch(`${USER_API_ENDPOINT}/logout`, {
+        method: "POST",
+        withCredentials: true,
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Logout Successful");
+        dispatch(setUser(null));
+        navigate("/login");
+      } else {
+        toast.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error("Logout failed");
+    }
+    console.log("Logout clicked");
+  };
 
   const NavLink = ({ to, children }) => (
     <li className="group">
@@ -29,19 +58,26 @@ function Navbar() {
             <Link to="/" className="flex items-baseline gap-1">
               <h1 className="text-2xl font-bold leading-none text-white">
                 Job
-                <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-pink-400">
-                  Portal
-                </span>
+                <span className="text-cyan-400 ">Portal</span>
               </h1>
             </Link>
           </div>
 
           {/* Center nav - hidden on small screens. Use overflow-hidden to avoid overflow issues. */}
-          <nav className="hidden sm:flex flex-1 justify-center">
+          <nav className="hidden sm:flex flex-1 justify-center ">
             <ul className="flex items-center gap-6 whitespace-nowrap font-semibold">
-              <NavLink to="/">Home</NavLink>
-              <NavLink to="/browse">Browse</NavLink>
-              <NavLink to="/jobs">Jobs</NavLink>
+              {user && user.role === "Recruiter" ? (
+                <>
+                  <NavLink to="/admin/companies">Companies</NavLink>
+                  <NavLink to="/admin/jobs">Jobs</NavLink>
+                </>
+              ) : (
+                <>
+                  <NavLink to="/Home">Home</NavLink>
+                  <NavLink to="/browse">Browse</NavLink>
+                  <NavLink to="/jobs">Jobs</NavLink>
+                </>
+              )}
             </ul>
           </nav>
 
@@ -56,7 +92,7 @@ function Navbar() {
                     </button>
                   </Link>
                   <Link to="/register">
-                    <button className="bg-linear-to-r from-cyan-500 to-pink-500 text-white px-3 py-1.5 rounded-md text-sm font-semibold hover:from-cyan-600 hover:to-pink-600 transition-all duration-200">
+                    <button className="bg-cyan-500 text-white px-3 py-1.5 rounded-md text-sm font-semibold hover:from-cyan-600 hover:to-pink-600 transition-all duration-200">
                       Register
                     </button>
                   </Link>
@@ -64,27 +100,43 @@ function Navbar() {
               ) : (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Avatar className="cursor-pointer">
-                      <AvatarImage src="https://static.vecteezy.com/system/resources/thumbnails/034/580/350/small/ai-generated-cute-little-girl-in-school-uniform-with-yellow-background-back-to-school-concept-photo.jpg" />
+                    <Avatar className="cursor-pointer h-12 w-12">
+                      <AvatarImage
+                        src={user?.profile?.profilePhoto}
+                        alt={user?.fullname}
+                      />
                     </Avatar>
                   </PopoverTrigger>
                   <PopoverContent className="w-72">
-                    <div className="flex items-start gap-4 text-white">
-                      <Avatar>
-                        <AvatarImage src="https://static.vecteezy.com/system/resources/thumbnails/034/580/350/small/ai-generated-cute-little-girl-in-school-uniform-with-yellow-background-back-to-school-concept-photo.jpg" />
+                    <div className="flex items-start gap-4 text-black">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage
+                          src={user?.profile?.profilePhoto}
+                          alt={user?.fullname}
+                        />
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold">sonam kesharwani</h3>
+                        <h3 className="font-semibold">{user?.fullname}</h3>
                         <p className="text-sm text-muted-foreground">
-                          sonam.kesharwani@example.com
+                          {user?.profile?.bio}
                         </p>
                         <div className="mt-4 flex flex-col gap-2">
-                          <button className="w-full bg-[#141f4e] text-white px-3 py-2 rounded-md flex items-center gap-2 text-sm">
-                            <User2 /> View profile
-                          </button>
-                          <button className="w-full bg-[#141f4e] text-white px-3 py-2 rounded-md flex items-center gap-2 text-sm">
-                            <LogOut /> Logout
-                          </button>
+                          {user && user.role === "Student" && (
+                            <button className="w-full bg-[#141f4e] text-white px-3 py-2 rounded-md flex items-center gap-2 text-sm">
+                              <User2 />
+                              <Button variant="link">
+                                {" "}
+                                <Link to={"/Profile"}>View profile</Link>
+                              </Button>
+                            </button>
+                          )}
+
+                          <div className="w-full bg-[#141f4e] text-white px-3 py-2 rounded-md flex items-center gap-2 text-sm">
+                            <LogOut />
+                            <Button onClick={logouthandler} variant="link">
+                              Logout
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -1,0 +1,2 @@
+- [ ] Move useSelector inside LatestJobs component and correct selector to store.jobs.allJobs
+- [ ] Update useGetAllJobs hook to dispatch fetched jobs using setAllJobs

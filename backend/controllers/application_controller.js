@@ -5,6 +5,7 @@ export const applyJob = async (req, res) => {
         const userId = req.id;
         // ensure user is authenticated
         if (!userId) {
+            console.log("User not authenticated");
             return res.status(401).json({ message: "Authentication required", success: false });
         }
         const jobId = req.params.id;
@@ -41,14 +42,22 @@ export const applyJob = async (req, res) => {
         });
 
         // job.applications in model may be a single ObjectId or null; ensure it's an array before pushing
-        if (!Array.isArray(job.applications)) {
+        if (!job.applications) {
             job.applications = [];
+        } else if (!Array.isArray(job.applications)) {
+            job.applications = [job.applications];
         }
         job.applications.push(newApplication._id);
         await job.save();
 
+        // Populate the applicant field before sending response
+        const populatedApplication = await Application.findById(newApplication._id).populate('applicant');
 
-        return res.status(200).json({ message: "Job application successful", status: true, });
+        return res.status(200).json({ 
+            message: "Job application successful", 
+            success: true,
+            application: populatedApplication 
+        });
     } catch (error) {
         console.error("Error in applying for job:", error);
         console.log(error);

@@ -1,4 +1,6 @@
 import { Company } from "../models/company_model.js";
+import getDataUri from "../utils/datauri.js";
+import cloudinary from "../utils/cloud.js";
 
 export const registerCompany = async (req, res) => {
     try {
@@ -13,13 +15,8 @@ export const registerCompany = async (req, res) => {
             });
         }
 
-        // Ensure required fields for the schema are present
-        if (!description) {
-            return res.status(400).json({
-                message: "Description is required",
-                success: false,
-            });
-        }
+        // Make description optional; default to empty string to match schema default
+        const safeDescription = description || "";
 
         // If this route is supposed to be authenticated, req.id must be present.
         // Currently the route is not protected, so return a clear 401 instead of letting Mongoose fail.
@@ -41,10 +38,10 @@ export const registerCompany = async (req, res) => {
         // Create company without attaching req.id (allow unauthenticated registration)
         const company = new Company({
             name: companyName,
-            description,
-            website,
-            location,
-            logo,
+            description: safeDescription,
+            website: website || "",
+            location: location || "",
+            logo: logo || "",
         });
         await company.save();
 
@@ -114,11 +111,21 @@ export const getCompanyById = async (req, res) => {
 //update company details
 export const updateCompany = async (req, res) => {
     try {
-        const { name, location, website, description } = req.body;
+        const { name, location, website, description, logoUrl } = req.body;
         const file = req.file;
 
-        //cloudinary upload
+        // Only upload to Cloudinary if a new file was provided (and no logoUrl from client-side upload)
         const updateData = { name, description, website, location };
+        if (logoUrl) {
+            // Client already uploaded logo directly; use that URL
+            updateData.logo = logoUrl;
+        } else if (file) {
+            // Fallback: server-side upload
+            const fileUri = getDataUri(file);
+            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            updateData.logo = cloudResponse.secure_url;
+        }
+
         const company = await Company.findByIdAndUpdate(
             req.params.id,
             updateData,
@@ -130,10 +137,18 @@ export const updateCompany = async (req, res) => {
                 success: false,
             });
         }
-        return res.status(200).json({ message: "Company update" });
+        return res.status(200).json({
+            message: "Company updated successfully",
+            company,
+            success: true
+        });
     }
     catch (error) {
         console.error(error);
+        return res.status(500).json({
+            message: "Error updating company",
+            success: false
+        });
     }
 };
 

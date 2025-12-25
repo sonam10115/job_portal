@@ -8,9 +8,15 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { USER_API_ENDPOINT } from "@/utils/data";
+// Optional: provide Cloudinary unsigned upload preset via Vite env vars
+const CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+const CLOUD_UPLOAD_PRESET = import.meta.env.VITE_CLOUD_UPLOAD_PRESET;
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import { setLoading } from "@/redux/authSlice";
 
-function Register() {
+const Register = () => {
   const [input, setInput] = useState({
     fullname: "",
     email: "",
@@ -19,8 +25,8 @@ function Register() {
     phoneNumber: "",
     file: "",
   });
-
-  const navigate = useNavigate();
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const changeEventHandler = (e) => {
     setInput({
@@ -35,34 +41,76 @@ function Register() {
     });
   };
 
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { loading } = useSelector((store) => store.auth);
+
   const submitHandler = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append("fullname", input.fullname);
-    formData.append("email", input.email);
-    formData.append("password", input.password);
-    formData.append("role", input.role);
-    formData.append("phoneNumber", input.phoneNumber);
-    if (input.file) {
-      formData.append("file", input.file);
-    }
-    
-    // Log what we're sending
-    console.log("Form submission data:");
-    console.log("- fullname:", input.fullname);
-    console.log("- email:", input.email);
-    console.log("- password:", input.password ? "***" : "MISSING");
-    console.log("- role:", input.role);
-    console.log("- phoneNumber:", input.phoneNumber);
-    console.log("- file:", input.file ? input.file.name : "none");
-    
     try {
-      const res = await axios.post(`${USER_API_ENDPOINT}/register`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true,
-      });
+      dispatch(setLoading(true));
+
+      // If an unsigned Cloudinary preset is provided via env, upload image directly from browser
+      let profilePhotoUrl = null;
+      if (input.file && CLOUD_NAME && CLOUD_UPLOAD_PRESET) {
+        try {
+          setUploading(true);
+          const cloudUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
+          const fd = new FormData();
+          fd.append("file", input.file);
+          fd.append("upload_preset", CLOUD_UPLOAD_PRESET);
+
+          const uploadRes = await axios.post(cloudUrl, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+            onUploadProgress: (evt) => {
+              if (evt.total)
+                setUploadProgress(Math.round((evt.loaded * 100) / evt.total));
+            },
+          });
+          profilePhotoUrl = uploadRes?.data?.secure_url;
+        } catch (uploadErr) {
+          console.warn(
+            "Direct upload failed, will fallback to server upload",
+            uploadErr
+          );
+        } finally {
+          setUploading(false);
+        }
+      }
+
+      // Build payload. If profilePhotoUrl is present, send it in JSON so backend can skip upload.
+      const payload = {
+        fullname: input.fullname,
+        email: input.email,
+        password: input.password,
+        role: input.role,
+        phoneNumber: input.phoneNumber,
+      };
+      if (profilePhotoUrl) payload.profilePhotoUrl = profilePhotoUrl;
+
+      // If we have already uploaded the image client-side, send JSON payload (faster server-side).
+      let res;
+      if (profilePhotoUrl) {
+        res = await axios.post(`${USER_API_ENDPOINT}/register`, payload, {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        });
+      } else {
+        // Fallback: send multipart/form-data (existing behavior)
+        const formData = new FormData();
+        formData.append("fullname", input.fullname);
+        formData.append("email", input.email);
+        formData.append("password", input.password);
+        formData.append("role", input.role);
+        formData.append("phoneNumber", input.phoneNumber);
+        if (input.file) formData.append("file", input.file);
+
+        res = await axios.post(`${USER_API_ENDPOINT}/register`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        });
+      }
+
       if (res.data.success) {
         navigate("/login");
         toast.success("Registration successful! " + res.data.message);
@@ -84,6 +132,8 @@ function Register() {
       } else {
         toast.error("Registration failed. Please try again.");
       }
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
@@ -200,12 +250,20 @@ function Register() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="mt-2 w-full py-3 rounded-xl text-white font-semibold bg-linear-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600"
-              >
-                Register
-              </button>
+              {loading ? (
+                <div className="flex items-center justify-center my-10">
+                  <div className="spinner-border text-blue-600" role="status">
+                    <span className="sr-only">Loading....</span>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  className="mt-2 w-full py-3 rounded-xl text-white font-semibold bg-linear-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600"
+                >
+                  Register
+                </button>
+              )}
 
               <p className="text-center mt-3 text-sm text-slate-300">
                 Already have an account?{" "}
@@ -222,6 +280,6 @@ function Register() {
       </div>
     </div>
   );
-}
+};
 
 export default Register;

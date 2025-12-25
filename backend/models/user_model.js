@@ -29,9 +29,7 @@ const userSchema = new mongoose.Schema({
         bio: {
             type: String,
         },
-        skills: [{
-            type: [String],
-        }],
+        skills: [String],
         resume: {
             type: String,  // URL or path to the resume file
         },
@@ -47,6 +45,7 @@ const userSchema = new mongoose.Schema({
             default: ''
         },
     },
+
 },
     { timestamps: true });
 
