@@ -12,9 +12,9 @@ const applicationSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        // include the default value 'Applied' in enum so default doesn't fail validation
-        enum: ["Applied", "", "accepted", "Rejected"],
-        default: "Applied",
+        // normalize status values to lowercase for consistent handling
+        enum: ["applied", "accepted", "rejected"],
+        default: "applied",
     },
 }, {
     timestamps: true,
