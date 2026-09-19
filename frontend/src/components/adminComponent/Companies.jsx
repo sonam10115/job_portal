@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import CompaniesTable from "./CompaniesTable";
 import React, { useEffect, useState } from "react";
 
-import useGetAllCompanies from "@/hooks/usegetAllCompanies";
+import useGetAllCompanies from "@/hooks/useGetAllCompanies";
 import { useDispatch } from "react-redux";
 import { setSearchCompanyByText } from "@/redux/companyslice";
 
