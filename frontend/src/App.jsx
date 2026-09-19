@@ -5,7 +5,7 @@ import Register from "./components/authentication/Register";
 import Home from "./components/components_lite/Home";
 import { RouterProvider } from "react-router-dom";
 // import PrivacyPolicy from "./components/components_lite/PrivacyPolicy";
-import TermsOfService from "./components/components_lite/termofService";
+import TermsOfService from "./components/components_lite/TermofService";
 import Jobs from "./components/components_lite/Jobs";
 import Browse from "./components/components_lite/Browse";
 import Profile from "./components/components_lite/Profile";
