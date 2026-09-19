@@ -71,6 +71,12 @@ app.use('/api/job', jobRoute);
 app.use('/api/company', companyRoute);
 app.use('/api/application', applicationRoute);
 
+
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.get('/*splat', (_, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
@@ -79,11 +85,6 @@ app.use((err, req, res, next) => {
         success: false,
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
-});
-
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-app.get('/*splat', (_, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 // Start server
