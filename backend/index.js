@@ -34,6 +34,9 @@ const corsOptions = {
         if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
             return callback(null, true);
         }
+        if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+            return callback(null, true);
+        }
         // otherwise block
         return callback(new Error('Not allowed by CORS'));
     },
@@ -60,7 +63,7 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ message: 'Backend is running', success: true });
 });
 
-const PORT = 8001;
+const PORT = process.env.PORT || 8001;
 
 //apis
 app.use('/api/users', userRoute);
