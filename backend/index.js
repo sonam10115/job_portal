@@ -8,7 +8,13 @@ import userRoute from './routes/user_route.js';
 import companyRoute from './routes/company_route.js';
 import jobRoute from './routes/job_route.js';
 import applicationRoute from './routes/application_route.js';
+import dns from 'dns';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+if (process.env.NODE_ENV !== "production") {
+    dns.setServers(["8.8.8.8", "8.8.4.4"]);
+}
 dotenv.config();
 // app.get('/', (req, res) => {
 //     res.send('Hello World!');
@@ -40,11 +46,14 @@ app.use(cors(corsOptions));
 
 // Request logging middleware
 app.use((req, res, next) => {
-    console.log(`\n ${req.method} ${req.path}`);
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
+    // console.log(`\n ${req.method} ${req.path}`);
+    // console.log('Headers:', req.headers);
+    // console.log('Body:', req.body);
     next();
 });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -67,6 +76,11 @@ app.use((err, req, res, next) => {
         success: false,
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
+});
+
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.get('/*splat', (_, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 // Start server
